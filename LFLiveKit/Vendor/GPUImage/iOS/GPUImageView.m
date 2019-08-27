@@ -230,17 +230,21 @@
 #pragma mark -
 #pragma mark Handling fill mode
 
-- (void)recalculateViewGeometry;
-{
+- (void)recalculateViewGeometry {
+    if ([NSThread isMainThread]) {
+        [self recalculate];
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self recalculate];
+        });
+    }
+}
+- (void)recalculate {
+    CGSize currentViewSize = self.bounds.size;
+    CGRect insetRect = AVMakeRectWithAspectRatioInsideRect(inputImageSize, self.bounds);
+
     runSynchronouslyOnVideoProcessingQueue(^{
         CGFloat heightScaling, widthScaling;
-        
-        CGSize currentViewSize = self.bounds.size;
-        
-        //    CGFloat imageAspectRatio = inputImageSize.width / inputImageSize.height;
-        //    CGFloat viewAspectRatio = currentViewSize.width / currentViewSize.height;
-        
-        CGRect insetRect = AVMakeRectWithAspectRatioInsideRect(inputImageSize, self.bounds);
         
         switch(_fillMode)
         {
@@ -278,6 +282,7 @@
 //        -1.0f,  1.0f,
 //        1.0f,  1.0f,
 //    };
+    
 }
 
 - (void)setBackgroundColorRed:(GLfloat)redComponent green:(GLfloat)greenComponent blue:(GLfloat)blueComponent alpha:(GLfloat)alphaComponent;
@@ -423,7 +428,10 @@
         if (!CGSizeEqualToSize(inputImageSize, rotatedSize))
         {
             inputImageSize = rotatedSize;
-            [self recalculateViewGeometry];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self recalculateViewGeometry];
+            });
+            
         }
     });
 }
