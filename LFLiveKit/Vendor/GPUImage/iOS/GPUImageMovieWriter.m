@@ -37,6 +37,7 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
     BOOL isRecording;
 }
 
+@property(assign, nonatomic) UIBackgroundTaskIdentifier backgroundTaskID;
 // Movie recording
 - (void)initializeMovieWithOutputSettings:(NSMutableDictionary *)outputSettings;
 
@@ -288,7 +289,7 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 	[self startRecording];
 }
 
-- (void)cancelRecording;
+- (void)cancelRecording
 {
     if (assetWriter.status == AVAssetWriterStatusCompleted)
     {
@@ -313,20 +314,37 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
     });
 }
 
-- (void)finishRecording;
+- (void)finishRecording
 {
-    [self finishRecordingWithCompletionHandler:NULL];
+    [self finishRecordingWithCompletionHandler: nil];
 }
 
-- (void)finishRecordingWithCompletionHandler:(void (^)(void))handler;
+- (void)finishRecordingWithCompletionHandler:(void (^)(void))handler
 {
+    __weak typeof(self) welf = self;
+    self.backgroundTaskID = [[UIApplication sharedApplication] beginBackgroundTaskWithName:@"Save Video Background Tasks" expirationHandler:^{
+        [[UIApplication sharedApplication] endBackgroundTask:welf.backgroundTaskID];
+        welf.backgroundTaskID = UIBackgroundTaskInvalid;
+    }];
+    
+    void(^completed)(void) = ^() {
+        if (welf.backgroundTaskID) {
+            if (handler) {
+                handler();
+            }
+            [[UIApplication sharedApplication] endBackgroundTask:welf.backgroundTaskID];
+            welf.backgroundTaskID = UIBackgroundTaskInvalid;
+        }
+    };
+    
+    
     runSynchronouslyOnContextQueue(_movieWriterContext, ^{
         isRecording = NO;
         
         if (assetWriter.status == AVAssetWriterStatusCompleted || assetWriter.status == AVAssetWriterStatusCancelled || assetWriter.status == AVAssetWriterStatusUnknown)
         {
-            if (handler)
-                runAsynchronouslyOnContextQueue(_movieWriterContext, handler);
+            if (completed)
+                runAsynchronouslyOnContextQueue(_movieWriterContext, completed);
             return;
         }
         if( assetWriter.status == AVAssetWriterStatusWriting && ! videoEncodingIsFinished )
@@ -342,13 +360,13 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 #if (!defined(__IPHONE_6_0) || (__IPHONE_OS_VERSION_MAX_ALLOWED < __IPHONE_6_0))
         // Not iOS 6 SDK
         [assetWriter finishWriting];
-        if (handler)
-            runAsynchronouslyOnContextQueue(_movieWriterContext,handler);
+        if (completed)
+            runAsynchronouslyOnContextQueue(_movieWriterContext,completed);
 #else
         // iOS 6 SDK
         if ([assetWriter respondsToSelector:@selector(finishWritingWithCompletionHandler:)]) {
             // Running iOS 6
-            [assetWriter finishWritingWithCompletionHandler:(handler ?: ^{ })];
+            [assetWriter finishWritingWithCompletionHandler:(completed ?: ^{ })];
         }
         else {
             // Not running iOS 6
@@ -356,8 +374,8 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
             [assetWriter finishWriting];
 #pragma clang diagnostic pop
-            if (handler)
-                runAsynchronouslyOnContextQueue(_movieWriterContext, handler);
+            if (completed)
+                runAsynchronouslyOnContextQueue(_movieWriterContext, completed);
         }
 #endif
     });
@@ -380,7 +398,7 @@ NSString *const kGPUImageColorSwizzlingFragmentShaderString = SHADER_STRING
         if (CMTIME_IS_INVALID(startTime))
         {
             runSynchronouslyOnContextQueue(_movieWriterContext, ^{
-                if ((audioInputReadyCallback == NULL) && (assetWriter.status != AVAssetWriterStatusWriting))
+                if ((audioInputReadyCallback == NULL) && (assetWriter.status == AVAssetWriterStatusUnknown))
                 {
                     [assetWriter startWriting];
                 }

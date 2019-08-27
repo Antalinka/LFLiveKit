@@ -62,9 +62,6 @@
 /* The currentImage is videoCapture shot */
 @property (nonatomic, strong, nullable) UIImage *currentImage;
 
-/* The saveLocalVideo is save the local video */
-@property (nonatomic, assign) BOOL saveLocalVideo;
-
 /* The saveLocalVideoPath is save the local video  path */
 @property (nonatomic, strong, nullable) NSURL *saveLocalVideoPath;
 
@@ -81,4 +78,7 @@
  */
 - (nullable instancetype)initWithVideoConfiguration:(nullable LFLiveVideoConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
 
+// The saveLocalVideo is save the local video
+- (BOOL)startWritting;
+- (void)finishRecordingWithCompletion:(void (^)(void))handler;
 @end

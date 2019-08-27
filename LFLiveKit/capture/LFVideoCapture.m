@@ -33,6 +33,7 @@
 @property (nonatomic, strong) UIView *waterMarkContentView;
 
 @property (nonatomic, strong) GPUImageMovieWriter *movieWriter;
+@property (nonatomic, assign) BOOL saveLocalVideo;
 
 @end
 
@@ -83,6 +84,28 @@
     return _videoCamera;
 }
 
+- (BOOL)startWritting {
+    if (self.movieWriter && self.movieWriter.assetWriter.status == AVAssetWriterStatusUnknown) {
+        return NO;
+    }
+    self.saveLocalVideo = YES;
+    [self setupMovieWriter];
+    [self reloadFilter];
+    [self.movieWriter startRecording];
+    return YES;
+}
+
+- (void)finishRecordingWithCompletion:(void (^)(void))handler {
+    __weak typeof(self) welf = self;
+    self.saveLocalVideo = NO;
+    [self.movieWriter finishRecordingWithCompletionHandler:^{
+        if (handler) {
+            handler();
+        }
+        welf.movieWriter = nil;
+    }];
+}
+
 - (void)setRunning:(BOOL)running {
     if (_running == running) return;
     _running = running;
@@ -90,12 +113,10 @@
     if (!_running) {
         [UIApplication sharedApplication].idleTimerDisabled = NO;
         [self.videoCamera stopCameraCapture];
-        if(self.saveLocalVideo) [self.movieWriter finishRecording];
     } else {
         [UIApplication sharedApplication].idleTimerDisabled = YES;
         [self reloadFilter];
         [self.videoCamera startCameraCapture];
-        if(self.saveLocalVideo) [self.movieWriter startRecording];
     }
 }
 
@@ -257,14 +278,11 @@
     return nil;
 }
 
-- (GPUImageMovieWriter*)movieWriter{
-    if(!_movieWriter){
-        _movieWriter = [[GPUImageMovieWriter alloc] initWithMovieURL:self.saveLocalVideoPath size:self.configuration.videoSize];
-        _movieWriter.encodingLiveVideo = YES;
-        _movieWriter.shouldPassthroughAudio = YES;
+- (void)setupMovieWriter {
+        self.movieWriter = [[GPUImageMovieWriter alloc] initWithMovieURL:self.saveLocalVideoPath size:self.configuration.videoSize];
+        self.movieWriter.encodingLiveVideo = YES;
+        self.movieWriter.shouldPassthroughAudio = YES;
         self.videoCamera.audioEncodingTarget = self.movieWriter;
-    }
-    return _movieWriter;
 }
 
 #pragma mark -- Custom Method
@@ -350,6 +368,7 @@
 
 - (void)willEnterBackground:(NSNotification *)notification {
     [UIApplication sharedApplication].idleTimerDisabled = NO;
+    self.movieWriter.paused = YES;
     [self.videoCamera pauseCameraCapture];
     runSynchronouslyOnVideoProcessingQueue(^{
         glFinish();
@@ -358,6 +377,7 @@
 
 - (void)willEnterForeground:(NSNotification *)notification {
     [self.videoCamera resumeCameraCapture];
+    self.movieWriter.paused = NO;
     [UIApplication sharedApplication].idleTimerDisabled = YES;
 }
 

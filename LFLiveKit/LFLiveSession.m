@@ -251,14 +251,25 @@
     [self didChangeValueForKey:@"beautyFace"];
 }
 
-- (BOOL)saveLocalVideo{
-    return self.videoCaptureSource.saveLocalVideo;
+- (BOOL)startWritting {
+    if (self.saveLocalVideoPath) {
+        return [self.videoCaptureSource startWritting];
+    } else {
+        NSLog(@"Needs set save url");
+        return NO;
+    }
 }
 
-- (void)setSaveLocalVideo:(BOOL)saveLocalVideo{
-    [self.videoCaptureSource setSaveLocalVideo:saveLocalVideo];
+- (void)stopWritting {
+    __weak typeof(self) welf = self;
+    [self.videoCaptureSource finishRecordingWithCompletion:^{
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.delegate && [self.delegate respondsToSelector:@selector(recordingDidFinish:)]) {
+                [self.delegate recordingDidFinish:welf];
+            }
+        });
+    }];
 }
-
 
 - (NSURL*)saveLocalVideoPath{
     return self.videoCaptureSource.saveLocalVideoPath;

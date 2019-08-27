@@ -49,6 +49,8 @@ typedef NS_ENUM(NSInteger,LFLiveCaptureTypeMask) {
 - (void)liveSession:(nullable LFLiveSession *)session debugInfo:(nullable LFLiveDebug *)debugInfo;
 /** callback socket errorcode */
 - (void)liveSession:(nullable LFLiveSession *)session errorCode:(LFLiveSocketErrorCode)errorCode;
+- (void)recordingDidFinish:(nullable LFLiveSession *)session;
+
 @end
 
 @class LFLiveStreamInfo;
@@ -121,9 +123,6 @@ typedef NS_ENUM(NSInteger,LFLiveCaptureTypeMask) {
 /* The currentImage is videoCapture shot */
 @property (nonatomic, strong,readonly ,nullable) UIImage *currentImage;
 
-/* The saveLocalVideo is save the local video */
-@property (nonatomic, assign) BOOL saveLocalVideo;
-
 /* The saveLocalVideoPath is save the local video  path */
 @property (nonatomic, strong, nullable) NSURL *saveLocalVideoPath;
 
@@ -158,5 +157,8 @@ typedef NS_ENUM(NSInteger,LFLiveCaptureTypeMask) {
 /** support outer input pcm audio(set LFLiveCaptureTypeMask) .*/
 - (void)pushAudio:(nullable NSData*)audioData;
 
+/* The saveLocalVideo is save the local video */
+- (BOOL)startWritting;
+- (void)stopWritting;
 @end
 
