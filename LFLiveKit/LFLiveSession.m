@@ -98,6 +98,7 @@
 - (void)startLive:(LFLiveStreamInfo *)streamInfo {
     if (!streamInfo) return;
     _streamInfo = streamInfo;
+    [self setupVideoEncoder];
     _streamInfo.videoConfiguration = _videoConfiguration;
     _streamInfo.audioConfiguration = _audioConfiguration;
     [self.socket start];
@@ -279,6 +280,11 @@
     [self.videoCaptureSource setSaveLocalVideoPath:saveLocalVideoPath];
 }
 
+- (void)setScreenOrientation:(UIInterfaceOrientation)screenOrientation {
+    _screenOrientation = screenOrientation;
+    self.videoCaptureSource.screenOrientation = screenOrientation;
+}
+
 - (BOOL)beautyFace {
     return self.videoCaptureSource.beautyFace;
 }
@@ -321,6 +327,10 @@
 
 - (BOOL)torch {
     return self.videoCaptureSource.torch;
+}
+
+- (BOOL)torchEnable {
+    return self.videoCaptureSource.torchEnable;
 }
 
 - (void)setMirror:(BOOL)mirror {
@@ -383,15 +393,13 @@
     return _audioEncoder;
 }
 
-- (id<LFVideoEncoding>)videoEncoder {
-    if (!_videoEncoder) {
-        if([[UIDevice currentDevice].systemVersion floatValue] < 8.0){
-            _videoEncoder = [[LFH264VideoEncoder alloc] initWithVideoStreamConfiguration:_videoConfiguration];
-        }else{
-            _videoEncoder = [[LFHardwareVideoEncoder alloc] initWithVideoStreamConfiguration:_videoConfiguration];
-        }
-        [_videoEncoder setDelegate:self];
+- (id<LFVideoEncoding>)setupVideoEncoder {
+    if([[UIDevice currentDevice].systemVersion floatValue] < 8.0){
+        _videoEncoder = [[LFH264VideoEncoder alloc] initWithVideoStreamConfiguration:_videoConfiguration];
+    }else{
+        _videoEncoder = [[LFHardwareVideoEncoder alloc] initWithVideoStreamConfiguration:_videoConfiguration];
     }
+    [_videoEncoder setDelegate:self];
     return _videoEncoder;
 }
 

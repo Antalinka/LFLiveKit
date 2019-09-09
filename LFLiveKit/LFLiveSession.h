@@ -88,6 +88,8 @@ typedef NS_ENUM(NSInteger,LFLiveCaptureTypeMask) {
 /** The torch control capture flash is on or off */
 @property (nonatomic, assign) BOOL torch;
 
+@property (nonatomic, assign) BOOL torchEnable;
+
 /** The mirror control mirror of front camera is on or off */
 @property (nonatomic, assign) BOOL mirror;
 
@@ -125,6 +127,9 @@ typedef NS_ENUM(NSInteger,LFLiveCaptureTypeMask) {
 
 /* The saveLocalVideoPath is save the local video  path */
 @property (nonatomic, strong, nullable) NSURL *saveLocalVideoPath;
+
+/* update screen orientation */
+@property (nonatomic, assign) UIInterfaceOrientation screenOrientation;
 
 #pragma mark - Initializer
 ///=============================================================================

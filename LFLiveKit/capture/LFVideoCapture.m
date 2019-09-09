@@ -141,6 +141,25 @@
     return [self.videoCamera cameraPosition];
 }
 
+- (void)setScreenOrientation:(UIInterfaceOrientation)screenOrientation {
+    if (self.screenOrientation == screenOrientation) { return; }
+    _screenOrientation = screenOrientation;
+    if (self.configuration.landscape) {
+        if (screenOrientation == UIInterfaceOrientationLandscapeLeft) {
+            self.videoCamera.outputImageOrientation = UIInterfaceOrientationLandscapeLeft;
+        } else if (screenOrientation == UIInterfaceOrientationLandscapeRight) {
+            self.videoCamera.outputImageOrientation = UIInterfaceOrientationLandscapeRight;
+        }
+    } else {
+        if (screenOrientation == UIInterfaceOrientationPortrait) {
+            self.videoCamera.outputImageOrientation = UIInterfaceOrientationPortrait;
+        } else if (screenOrientation == UIInterfaceOrientationPortraitUpsideDown) {
+            self.videoCamera.outputImageOrientation = UIInterfaceOrientationPortraitUpsideDown;
+        }
+    }
+    [self reloadFilter];
+}
+
 - (void)setVideoFrameRate:(NSInteger)videoFrameRate {
     if (videoFrameRate <= 0) return;
     if (videoFrameRate == self.videoCamera.frameRate) return;
@@ -178,7 +197,13 @@
 - (BOOL)torch {
     return self.videoCamera.inputCamera.torchMode;
 }
-
+- (BOOL)torchEnable {
+    if (self.videoCamera.inputCamera) {
+        return self.videoCamera.inputCamera.torchAvailable;
+    }
+    return NO;
+}
+    
 - (void)setMirror:(BOOL)mirror {
     _mirror = mirror;
 }
@@ -386,6 +411,7 @@
     UIInterfaceOrientation statusBar = [[UIApplication sharedApplication] statusBarOrientation];
 
     if(self.configuration.autorotate){
+//        self.screenOrientation = statusBar;
         if (self.configuration.landscape) {
             if (statusBar == UIInterfaceOrientationLandscapeLeft) {
                 self.videoCamera.outputImageOrientation = UIInterfaceOrientationLandscapeRight;
