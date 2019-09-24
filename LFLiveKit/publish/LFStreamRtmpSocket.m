@@ -50,6 +50,7 @@ SAVC(mp4a);
 {
     PILI_RTMP *_rtmp;
 }
+@property (nonatomic, assign) LFLiveState socetStatus;
 @property (nonatomic, weak) id<LFStreamSocketDelegate> delegate;
 @property (nonatomic, strong) LFLiveStreamInfo *stream;
 @property (nonatomic, strong) LFStreamingBuffer *buffer;
@@ -113,6 +114,7 @@ SAVC(mp4a);
     if (_isConnecting) return;
     
     _isConnecting = YES;
+    self.socetStatus = LFLivePending;
     if (self.delegate && [self.delegate respondsToSelector:@selector(socketStatus:status:)]) {
         [self.delegate socketStatus:self status:LFLivePending];
     }
@@ -132,6 +134,7 @@ SAVC(mp4a);
 }
 
 - (void)_stop {
+    self.socetStatus = LFLiveStop;
     if (self.delegate && [self.delegate respondsToSelector:@selector(socketStatus:status:)]) {
         [self.delegate socketStatus:self status:LFLiveStop];
     }
@@ -276,6 +279,7 @@ SAVC(mp4a);
         goto Failed;
     }
 
+    self.socetStatus = LFLiveStart;
     if (self.delegate && [self.delegate respondsToSelector:@selector(socketStatus:status:)]) {
         [self.delegate socketStatus:self status:LFLiveStart];
     }
@@ -493,6 +497,7 @@ Failed:
             });
            
         } else if (self.retryTimes4netWorkBreaken >= self.reconnectCount) {
+            self.socetStatus = LFLiveError;
             if (self.delegate && [self.delegate respondsToSelector:@selector(socketStatus:status:)]) {
                 [self.delegate socketStatus:self status:LFLiveError];
             }
@@ -505,6 +510,8 @@ Failed:
 
 - (void)_reconnect{
     [NSObject cancelPreviousPerformRequestsWithTarget:self];
+    
+    if (self.socetStatus == LFLiveStop) { return; }
     
     _isReconnecting = NO;
     if(_isConnected) return;
@@ -519,6 +526,7 @@ Failed:
     _sendAudioHead = NO;
     _sendVideoHead = NO;
     
+    self.socetStatus = LFLiveRefresh;
     if (self.delegate && [self.delegate respondsToSelector:@selector(socketStatus:status:)]) {
         [self.delegate socketStatus:self status:LFLiveRefresh];
     }
