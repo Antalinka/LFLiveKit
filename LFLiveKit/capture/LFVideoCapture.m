@@ -306,7 +306,7 @@
 - (void)setupMovieWriter {
         self.movieWriter = [[GPUImageMovieWriter alloc] initWithMovieURL:self.saveLocalVideoPath size:self.configuration.videoSize];
         self.movieWriter.encodingLiveVideo = YES;
-        self.movieWriter.shouldPassthroughAudio = YES;
+        self.movieWriter.shouldPassthroughAudio = NO;
         self.videoCamera.audioEncodingTarget = self.movieWriter;
 }
 
